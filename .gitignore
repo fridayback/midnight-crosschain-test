@@ -1,0 +1,9 @@
+contractAddr
+contractstate
+serialized-state
+node_modules/
+yarn.lock
+midnight-level-db/
+index2.js
+test.js
+.env
