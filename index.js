@@ -80,7 +80,7 @@ You can do one of the following:
   6-0. show user claim info
   6-1. userRechargeForFee [amount]
   6-2. userClaimMappingToken [id]
-  7-1. upgradeContract [circuit]
+  *7-1. upgradeContract [circuit]
   0. Exit
 Which would you like to do? `;
 
@@ -615,12 +615,12 @@ const mainLoop = async (rli, wallet) => {
                 case '6': {
                     break;
                 }
-                case '7-1': {
-                    console.log('upgrade circuit ', args[0]);
-                    const res = await api.upgradeContract(args[0]);
-                    console.log('upgradeContract res:', res.public.blockHash, res.public.blockHeight);
-                    break;
-                }
+                // case '7-1': {
+                //     console.log('upgrade circuit ', args[0]);
+                //     const res = await api.upgradeContract(args[0]);
+                //     console.log('upgradeContract res:', res.public.blockHash, res.public.blockHeight);
+                //     break;
+                // }
                 case '0':
                     console.info('Exiting...');
                     return;
