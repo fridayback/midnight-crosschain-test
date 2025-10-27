@@ -24,7 +24,7 @@ import { createInterface } from 'readline/promises';
 import {
     CrossChainApi, MidnightWalletSDK, initNetwork
     , createWalletAndMidnightProvider, buildWalletAndWaitForFunds, pad
-    , getTreasuryCoinsFromState, waitForFunds
+    , getTreasuryCoinsFromState, upgradeContractCircuit, removeContractCircuit
 } from 'midnight-crosschain';
 import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import * as fs from 'fs/promises'
@@ -54,7 +54,8 @@ const DEPLOY_OR_JOIN_QUESTION = `
 You can do one of the following:
   1. Deploy a new counter contract
   2. Join an existing counter contract
-  3. Exit
+  3. Upgrade circuit
+  0. Exit
 Which would you like to do? `;
 
 const MAIN_LOOP_QUESTION = `
@@ -93,6 +94,40 @@ const join = async (rli) => {
     return contractAddress;
 };
 
+const selectAndReadFile = async (rli) => {
+    const filePath = await rli.question('What is the file path? (please press enter directly to select default)');
+    while(filePath){
+        try {
+        const fileComment = await fs.readFile(filePath,{encoding: "ascii"});
+        console.log(`select file: ${filePath}`);
+        return {filePath:filePath, fileComment:fileComment};
+    } catch (error) {
+        console.log(`select file: ${circuit} error: ${error}`);
+        const circuit = await rli.question('What is the file path? (please press enter directly to select default)');
+    }
+    }
+    console.log(`select file: default`);
+}
+
+const upgradeContract = async (rli) => {
+    const contractAddress = await rli.question('What is the contract address? ');
+    const circuitId = await rli.question('What is the circuit id? ');
+    let circuitFile = await selectAndReadFile(rli);
+    if(!circuitFile){
+        circuitFile = {fileComment:await api.providers.zkConfigProvider.getVerifierKey(circuitId), filePath: 'default'};
+    }
+    console.log(`Upgrading contract (${contractAddress}) circuitId ${circuitId} with new circuit: ${circuitFile?circuitFile.filePath:'default'}`);
+    const contractState = await api.providers.publicDataProvider.queryContractState(contractAddress);
+    
+    if(contractState.operation(circuitId)) {
+        console.log(`Remove Contract Circuit ${circuitId} first ...`);
+        const ret = await removeContractCircuit(api.providers, contractAddress, circuitId);
+        if(ret) console.log(`Remove Contract Circuit ${ret.status}, ${ret}`);
+        console.log(`Remove Contract Circuit Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
+    }
+    
+    return await upgradeContractCircuit(api.providers, contractAddress, circuitId, circuitFile.fileComment);
+}
 
 const deployOrJoin = async (rli) => {
     try {
@@ -117,6 +152,11 @@ const deployOrJoin = async (rli) => {
             case '2':
                 return await join(rli);
             case '3':
+                console.log('Begin to upgrade circuit ...');
+                const ret = await upgradeContract(rli);
+                console.log(`Upgrade Contract Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
+                break;
+            case '0':
                 console.info('Exiting...');
                 return null;
             default:
@@ -226,6 +266,16 @@ const mainLoop = async (rli, wallet) => {
     console.log('api initializing...');
     await api.init(config, wallet);
     console.log('api initailized');
+
+    // {
+    //     const curcuitId = 'approveUserWithdrawFee';
+    //     const vkPath = '/home/liulin/midnight/midnight-crosschain-test/node_modules/midnight-crosschain/dist/managed/crosschain/keys/';
+    //     const file = vkPath + curcuitId + '.verifier';
+    //     const verifyHex = await fs.readFile(file);
+    //     const ret = await removeContractCircuit(api.providers, '0200977b217a300ca8ef78c088a39028341c1845ef11edda84d43c28d3334cd76863', curcuitId);
+    //     assert(ret.status == 'SucceedEntirely','remove contract circuit failed');
+    //     await upgradeContractCircuit(api.providers, '0200977b217a300ca8ef78c088a39028341c1845ef11edda84d43c28d3334cd76863', 'approveUserWithdrawFee', Buffer.from(verifyHex).toString('hex'));
+    // }
 
     const counterContract = await deployOrJoin(rli);
     if (!counterContract) {
