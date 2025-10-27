@@ -80,7 +80,6 @@ You can do one of the following:
   6-0. show user claim info
   6-1. userRechargeForFee [amount]
   6-2. userClaimMappingToken [id]
-  *7-1. upgradeContract [circuit]
   0. Exit
 Which would you like to do? `;
 
