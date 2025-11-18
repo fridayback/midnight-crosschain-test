@@ -685,11 +685,11 @@ const buildWallet = async (config) => {
 
 
 const storeWalletSate = async (stateHex) => {
-    await fs.writeFile('./serialized-state', stateHex, 'ascii');
+    await fs.writeFile('./serialized-state-'+seed, stateHex, 'ascii');
 }
 const readWalletState = async () => {
     try {
-        return await fs.readFile('./serialized-state', 'ascii');
+        return await fs.readFile('./serialized-state-'+seed, 'ascii');
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }
