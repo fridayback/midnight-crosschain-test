@@ -80,7 +80,6 @@ You can do one of the following:
   6-0. show user claim info
   6-1. userRechargeForFee [amount]
   6-2. userClaimMappingToken [id]
-  *7-1. upgradeContract [circuit]
   0. Exit
 Which would you like to do? `;
 
@@ -96,15 +95,15 @@ const join = async (rli) => {
 
 const selectAndReadFile = async (rli) => {
     const filePath = await rli.question('What is the file path? (please press enter directly to select default)');
-    while(filePath){
+    while (filePath) {
         try {
-        const fileComment = await fs.readFile(filePath,{encoding: "ascii"});
-        console.log(`select file: ${filePath}`);
-        return {filePath:filePath, fileComment:fileComment};
-    } catch (error) {
-        console.log(`select file: ${circuit} error: ${error}`);
-        const circuit = await rli.question('What is the file path? (please press enter directly to select default)');
-    }
+            const fileComment = await fs.readFile(filePath, { encoding: "ascii" });
+            console.log(`select file: ${filePath}`);
+            return { filePath: filePath, fileComment: fileComment };
+        } catch (error) {
+            console.log(`select file: ${circuit} error: ${error}`);
+            const circuit = await rli.question('What is the file path? (please press enter directly to select default)');
+        }
     }
     console.log(`select file: default`);
 }
@@ -113,19 +112,19 @@ const upgradeContract = async (rli) => {
     const contractAddress = await rli.question('What is the contract address? ');
     const circuitId = await rli.question('What is the circuit id? ');
     let circuitFile = await selectAndReadFile(rli);
-    if(!circuitFile){
-        circuitFile = {fileComment:await api.providers.zkConfigProvider.getVerifierKey(circuitId), filePath: 'default'};
+    if (!circuitFile) {
+        circuitFile = { fileComment: await api.providers.zkConfigProvider.getVerifierKey(circuitId), filePath: 'default' };
     }
-    console.log(`Upgrading contract (${contractAddress}) circuitId ${circuitId} with new circuit: ${circuitFile?circuitFile.filePath:'default'}`);
+    console.log(`Upgrading contract (${contractAddress}) circuitId ${circuitId} with new circuit: ${circuitFile ? circuitFile.filePath : 'default'}`);
     const contractState = await api.providers.publicDataProvider.queryContractState(contractAddress);
-    
-    if(contractState.operation(circuitId)) {
+
+    if (contractState.operation(circuitId)) {
         console.log(`Remove Contract Circuit ${circuitId} first ...`);
         const ret = await removeContractCircuit(api.providers, contractAddress, circuitId);
-        if(ret) console.log(`Remove Contract Circuit ${ret.status}, ${ret}`);
+        if (ret) console.log(`Remove Contract Circuit ${ret.status}, ${ret}`);
         console.log(`Remove Contract Circuit Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
     }
-    
+
     return await upgradeContractCircuit(api.providers, contractAddress, circuitId, circuitFile.fileComment);
 }
 
@@ -294,9 +293,9 @@ const mainLoop = async (rli, wallet) => {
     console.log(`contract address:${api.crossChainContract.deployTxData.public.contractAddress},deploy block:${api.crossChainContract.deployTxData.public.blockHeight},
         deploy block hash:${api.crossChainContract.deployTxData.public.blockHash}, fee:${api.crossChainContract.deployTxData.public.tx.fees(LedgerParameters.dummyParameters())}`);
 
-        // const ret = await api.smgMint('8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422'
-        //     , '000000000000000000000000000000000000000000000000006465765f323537'
-        //     , 1236, 12345678, 0, 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600', 1762836067017);
+    // const ret = await api.smgMint('8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422'
+    //     , '000000000000000000000000000000000000000000000000006465765f323537'
+    //     , 1236, 12345678, 0, 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600', 1762836067017);
     while (true) {
         try {
             const cmd = await rli.question(MAIN_LOOP_QUESTION);
@@ -445,7 +444,7 @@ const mainLoop = async (rli, wallet) => {
                         const addr = 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600';
                         proofData = {
                             smgId: '000000000000000000000000000000000000000000000000006465765f323537',
-                            uniqueId: '0000000000000000000000000000000000000000000000000000000000000073',
+                            uniqueId: '8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422',
                             tokenPairId: 1236,
                             amount: 12345678,
                             fee: 0,
@@ -581,7 +580,8 @@ const mainLoop = async (rli, wallet) => {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
                         'mn_shield-addr_test1wcwr534s5vasc49h426dfema8qjef2yrsuenp88g9304nkplzkgsxqqmkt0f9ve0whvq6hzcjwdtn5h7fnflvw2jeg6pjfq8tjnk9txej5h7szus',
-                        'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600'
+                        'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600',
+                        'mn_shield-addr_test10hcfzy7ehc8ajc3rg5673meg3vdln3x83cs2dstr7eadcrvzxg4qxq8u3y3q8d30vrfpslszkhpemzk24s0q2jjmrx6dlgj59g8newzr5csnwdw8'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
@@ -639,12 +639,28 @@ const mainLoop = async (rli, wallet) => {
                 case '6': {
                     break;
                 }
-                // case '7-1': {
-                //     console.log('upgrade circuit ', args[0]);
-                //     const res = await api.upgradeContract(args[0]);
-                //     console.log('upgradeContract res:', res.public.blockHash, res.public.blockHeight);
-                //     break;
-                // }
+                case '7-0':{
+                    const state = await api.getLedgerState();
+                    console.log(`mergerWorker: ${Buffer.from(state.mergeWorker.bytes).toString('hex')}`);
+                    break;
+                }
+                case '7': {
+                    let res;
+                    switch (args[0]) {
+                        case '0': {
+                            console.log(`assign [${args[0]}] role`);
+                            break;
+                        }
+                        case '1': {
+                            res = await api.setMegerWorker(args[1]);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    if(res) console.log('upgradeContract res:', res.public.blockHash, res.public.blockHeight);
+                    break;
+                }
                 case '0':
                     console.info('Exiting...');
                     return;
@@ -701,7 +717,7 @@ export const run = async (config) => {
     console.info('Building Wallet ...');
     walletSdk = new MidnightWalletSDK(config);
     const serializedState = await readWalletState();
-    await walletSdk.initWallet(seed, storeWalletSate, serializedState,60000);
+    await walletSdk.initWallet(seed, storeWalletSate, serializedState, 60000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');
