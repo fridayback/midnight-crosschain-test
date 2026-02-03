@@ -13,35 +13,34 @@
 // // See the License for the specific language governing permissions and
 // // limitations under the License.
 
-// // import { type Resource } from '@midnight-ntwrk/wallet';
-// // import { type Wallet } from '@midnight-ntwrk/wallet-api';
+import "dotenv/config";
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'readline/promises';
 // // import { type Logger } from 'pino';
-// // import { type StartedDockerComposeEnvironment, type DockerComposeEnvironment } from 'testcontainers';
-// // import { type CounterProviders, type DeployedCounterContract } from './common-types';
-// // import { type Config, StandaloneConfig } from './config.js';
 import {
     CrossChainApi, MidnightWalletSDK, initNetwork
-    , createWalletAndMidnightProvider, buildWalletAndWaitForFunds, pad
-    , getTreasuryCoinsFromState, upgradeContractCircuit, removeContractCircuit
+    , pad
+    , getTreasuryCoinsFromState, upgradeContractCircuit, removeContractCircuit,configuration
 } from 'midnight-crosschain';
 // import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import * as fs from 'fs/promises'
 
 import * as runtime from '@midnight-ntwrk/compact-runtime'
 // import { createCoinInfo } from '@midnight-ntwrk/zswap';
-import { coinCommitment, communicationCommitmentRandomness, nativeToken, sampleCoinPublicKey, decodeTokenType, tokenType, encodeTokenType, LedgerParameters } from '@midnight-ntwrk/ledger';
+import { coinCommitment, communicationCommitmentRandomness, nativeToken, sampleCoinPublicKey, decodeRawTokenType, rawTokenType, encodeRawTokenType, LedgerParameters } from '@midnight-ntwrk/ledger-v7';
 import { MidnightBech32m, ShieldedAddress } from '@midnight-ntwrk/wallet-sdk-address-format';
 import * as Rx from 'rxjs';
 import { assertIsContractAddress, fromHex, parseCoinPublicKeyToHex, toHex } from '@midnight-ntwrk/midnight-js-utils';
 import { assert } from 'node:console';
-// import { CoinInfo, decodeTokenType, encodeTokenType, Transaction, TransactionId, tokenType, communicationCommitmentRandomness, sampleCoinPublicKey, encodeCoinInfo, createCoinInfo } from '@midnight-ntwrk/ledger';
-import dotenv from 'dotenv';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
+// import { CoinInfo, decodeRawTokenType, encodeTokenType, Transaction, TransactionId, tokenType, communicationCommitmentRandomness, sampleCoinPublicKey, encodeCoinInfo, createCoinInfo } from '@midnight-ntwrk/ledger';
+
+// import path from 'node:path';
+
+import * as bip39 from '@scure/bip39';
+import { wordlist as english } from '@scure/bip39/wordlists/english';
+import * as facade from '@midnight-ntwrk/wallet-sdk-facade';
+
+// dotenv.config({ path: path.join('.', '.env') });
 // import { BigNumber } from 'bignumber.js';
 
 // /**
@@ -82,8 +81,9 @@ You can do one of the following:
   6-2. userClaimMappingToken [id]
   0. Exit
 Which would you like to do? `;
-
-initNetwork(2);
+// const NETWORKID = 'preview';//'undeployed';//
+const NETWORKID = 'undeployed';//'undeployed';//
+initNetwork(NETWORKID);
 const api = new CrossChainApi();
 
 const join = async (rli) => {
@@ -191,13 +191,33 @@ const tokenPair = [
     }
 ]
 
+// const config = {
+//     // logDir: `testnet-remote.log`,
+//     indexer: 'http://54.187.143.74:8088/api/v3/graphql',//'https://indexer.preview.midnight.network/api/v3/graphql',
+//     indexerWS: 'ws://54.187.143.74:8088/api/v3/graphql/ws',//'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
+//     node: 'ws://54.187.143.74:9944',//'https://rpc.preview.midnight.network',
+//     proofServer: 'http://54.187.143.74:6300',//'http://127.0.0.1:6300'//
+//     // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
+//     // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
+// };
+
+// const config = {
+//     // logDir: `testnet-remote.log`,
+//     indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
+//     indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
+//     node: 'https://rpc.preview.midnight.network',
+//     proofServer: 'https://lace-proof-pub.preview.midnight.network',//'http://127.0.0.1:6300'//
+//     // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
+//     // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
+// };
+
 const config = {
     // logDir: `testnet-remote.log`,
-    indexer: 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
-    indexerWS: 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
-    node: 'https://rpc.testnet-02.midnight.network',
-    // proofServer: 'http://127.0.0.1:6300'//
-    proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
+    indexer: 'http://localhost:8088/api/v3/graphql',
+    indexerWS: 'ws://localhost:8088/api/v3/graphql/ws',
+    node: 'http://localhost:9944',
+    proofServer: 'http://localhost:6300',//'http://127.0.0.1:6300'//
+    // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
     // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
 };
 
@@ -364,7 +384,7 @@ const mainLoop = async (rli, wallet) => {
                     let domainSep = '';
                     let midnightTokenAccount = tokenPairSelect.midnightTokenAccount;
                     if (tokenPairSelect.isMappingToken) {
-                        midnightTokenAccount = tokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
+                        midnightTokenAccount = rawTokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
                         domainSep = tokenPairSelect.midnightTokenAccount;
                     }
                     console.log(`addTokenPair:${midnightTokenAccount} domainSep:${domainSep}`);
@@ -386,7 +406,7 @@ const mainLoop = async (rli, wallet) => {
 
                     let proofData;
                     if (!args || args.length !== 4) {
-                        const tokenType = decodeTokenType(ledgerState.tokenPairs.lookup(BigInt(1)).midnigthTokenAccount);
+                        const tokenType = decodeRawTokenType(ledgerState.tokenPairs.lookup(BigInt(1)).midnigthTokenAccount);
                         const coins = treasuryCoins.get(tokenType);
                         for (const [id, coin] of coins) {
                             console.log(`[${id}]: color:${toHex(coin.color)}, nonce:${toHex(coin.color)},value:${coin.value},mt_index:${coin.mt_index},`);
@@ -405,7 +425,7 @@ const mainLoop = async (rli, wallet) => {
                         };
                         for (const [id, coin] of coins) { proofData.coins.push(BigInt(id)) };
                     } else {
-                        const tokenType = decodeTokenType(ledgerState.tokenPairs.lookup(BigInt(args[0])).midnigthTokenAccount);
+                        const tokenType = decodeRawTokenType(ledgerState.tokenPairs.lookup(BigInt(args[0])).midnigthTokenAccount);
                         const coins = treasuryCoins.get(tokenType);
                         for (const [id, coin] of coins) {
                             console.log(`[${id}]: color:${toHex(coin.color)}, nonce:${toHex(coin.color)},value:${coin.value},mt_index:${coin.mt_index},`);
@@ -437,21 +457,21 @@ const mainLoop = async (rli, wallet) => {
                 case '4-3': {
                     const ledgerState = await api.getLedgerState();
                     // const treasuryCoins = getTreasuryCoinsFromState(ledgerState);
-                    // const tokenType = decodeTokenType(ledgerState.tokenPairs.lookup(BigInt(proofData.tokenPairId)).midnigthTokenAccount);
+                    // const tokenType = decodeRawTokenType(ledgerState.tokenPairs.lookup(BigInt(proofData.tokenPairId)).midnigthTokenAccount);
                     // const coins = treasuryCoins.get(tokenType);
                     let proofData;
                     if (!args || args.length !== 4) {
                         const addr = 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600';
                         proofData = {
                             smgId: '000000000000000000000000000000000000000000000000006465765f323537',
-                            uniqueId: '8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422',
+                            uniqueId: '3612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422',
                             tokenPairId: 1236,
                             amount: 12345678,
                             fee: 0,
-                            toAddr: 'mn_shield-addr_test146vd0tfhtdg46fz4ddlfjfw6flnt2gaa25tyr2s48tklhjf553xsxqxu7tghauj06dzsl0qmxafdghv0u4u52y7ttp07zn06a6fekee8mv7qm8s3',//addr,
+                            toAddr: 'mn_shield-addr_test1gcfhdzk3l4wwucv94m0xx3cejrz5csfdxhrx4rv33yu9j5xxy8jsxqz5ke949y5s0eev00nysyrw3drv0yusdwhwa2vg9ygm0u4wtgnh2safmk5r',//addr,
                             coins: undefined,
                             signers: Array.from({ length: 29 }, (_, i) => i),
-                            ttl: 1762836067017
+                            ttl: 1762836067000
                         };
                     } else {
                         proofData = {
@@ -581,7 +601,11 @@ const mainLoop = async (rli, wallet) => {
                     const pks = [
                         'mn_shield-addr_test1wcwr534s5vasc49h426dfema8qjef2yrsuenp88g9304nkplzkgsxqqmkt0f9ve0whvq6hzcjwdtn5h7fnflvw2jeg6pjfq8tjnk9txej5h7szus',
                         'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600',
-                        'mn_shield-addr_test10hcfzy7ehc8ajc3rg5673meg3vdln3x83cs2dstr7eadcrvzxg4qxq8u3y3q8d30vrfpslszkhpemzk24s0q2jjmrx6dlgj59g8newzr5csnwdw8'
+                        'mn_shield-addr_test10hcfzy7ehc8ajc3rg5673meg3vdln3x83cs2dstr7eadcrvzxg4qxq8u3y3q8d30vrfpslszkhpemzk24s0q2jjmrx6dlgj59g8newzr5csnwdw8',
+                        'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c',
+                        'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk', //leader
+                        'mn_shield-addr_test13qpnw0xntfpnthd4mv5kvm3gmyg5cculauk7psd79l99zvpxk6msxqre6q676xp5v7a9qh4ws5ykk45lewcd0dn2kyyztn3fkt6q40rl7vxu7hfq',
+                        'mn_shield-addr_test1paa2s0yp9czpkx5zyhcf3azuehzean5g3cxxvswwv4mam6f8nxesxq90ea8t5e4grmcf0qg4d4939fjkf9wsrez8gfxugsypm903w25q3ydw2ngd'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
@@ -653,12 +677,13 @@ const mainLoop = async (rli, wallet) => {
                         }
                         case '1': {
                             res = await api.setMegerWorker(args[1]);
+                            if(res) console.log('setMegerWorker res:', res.public.blockHash, res.public.blockHeight);
                             break;
                         }
                         default:
                             break;
                     }
-                    if(res) console.log('upgradeContract res:', res.public.blockHash, res.public.blockHeight);
+                    
                     break;
                 }
                 case '0':
@@ -673,10 +698,10 @@ const mainLoop = async (rli, wallet) => {
     }
 };
 
-const buildWalletFromSeed = async (config, rli) => {
-    const seed = await rli.question('Enter your wallet seed: ');
-    return await api.buildWalletAndWaitForFunds(config, seed, '');
-};
+// const buildWalletFromSeed = async (config, rli) => {
+//     const seed = await rli.question('Enter your wallet seed: ');
+//     return await api.buildWalletAndWaitForFunds(config, seed, '');
+// };
 
 const WALLET_LOOP_QUESTION = `
 You can do one of the following:
@@ -688,41 +713,97 @@ Which would you like to do? `;
 //mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600
 const seed = process.env.SEED;
 
-const buildWallet = async (config) => {
-    const state = await readWalletState();
-    return await buildWalletAndWaitForFunds(config, seed, state);//mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600
-    // return await buildWalletAndWaitForFunds(config, "42fa5956447ddfb94a5d21f4a46516ea4ad4b51240d448795ff8a36526c874ce", '');//mn_shield-addr_test1kh6uwh96xq09ek9p85jnjhqwzvcru6rmsk4nexkpf30tkne567msxq8e8q40v4wycfxn8dcvhejpqh0sz6hu2llum595aqp9rc3wx4x6gyj0r632
-    // return await buildWalletAndWaitForFunds(config, "5e426c4474b2758528fd966e2c5eac089af220b04a04d3179bccb51d1c4e3bf9", '');//mn_shield-addr_test1wcwr534s5vasc49h426dfema8qjef2yrsuenp88g9304nkplzkgsxqqmkt0f9ve0whvq6hzcjwdtn5h7fnflvw2jeg6pjfq8tjnk9txej5h7szus
-};
+// const buildWallet = async (config) => {
+//     const state = await readWalletState();
+//     return await buildWalletAndWaitForFunds(config, seed, state);//mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600
+//     // return await buildWalletAndWaitForFunds(config, "42fa5956447ddfb94a5d21f4a46516ea4ad4b51240d448795ff8a36526c874ce", '');//mn_shield-addr_test1kh6uwh96xq09ek9p85jnjhqwzvcru6rmsk4nexkpf30tkne567msxq8e8q40v4wycfxn8dcvhejpqh0sz6hu2llum595aqp9rc3wx4x6gyj0r632
+//     // return await buildWalletAndWaitForFunds(config, "5e426c4474b2758528fd966e2c5eac089af220b04a04d3179bccb51d1c4e3bf9", '');//mn_shield-addr_test1wcwr534s5vasc49h426dfema8qjef2yrsuenp88g9304nkplzkgsxqqmkt0f9ve0whvq6hzcjwdtn5h7fnflvw2jeg6pjfq8tjnk9txej5h7szus
+// };
 
 
 
-const storeWalletSate = async (stateHex) => {
-    await fs.writeFile('./serialized-state-'+seed, stateHex, 'ascii');
+const storeWalletSate = async (state) => {
+    await fs.writeFile('./serialized-state-'+seed, JSON.stringify(state), 'ascii');
 }
 const readWalletState = async () => {
     try {
-        return await fs.readFile('./serialized-state-'+seed, 'ascii');
+        return JSON.parse(await fs.readFile('./serialized-state-'+seed, 'ascii'));
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }
 }
 let walletSdk;
 
+
+export const transferTo = async (address, amount, coinType, wallet) => {
+  // import { nativeToken } from '@midnight-ntwrk/zswap';
+
+  const transferRecipe = await wallet.transferTransaction([
+    {
+      amount: BigInt(amount),
+      receiverAddress: address,
+      type: coinType, // tDUST token type
+    },
+  ]);
+
+  const provenTransaction = await wallet.proveTransaction(transferRecipe);
+  const submittedTransaction = await wallet.submitTransaction(provenTransaction);
+  // console.log('Transaction submitted:', submittedTransaction);
+  return submittedTransaction;
+  
+}
+
+async function ttt(){
+    const memo = 'guilt upgrade salon ranch puppy cushion envelope table model boat figure garlic chef inspire memory fringe era correct ginger salmon glare tribe tilt tattoo';
+    // const memo = 'frog assume tenant furnace amount will soap ask hobby alpha smooth boy bacon love guitar shy early patch hip ecology obscure subject stick pear';
+    // const memo = '';
+    const seedM = bip39.mnemonicToSeedSync(memo);
+    console.log('seed:', Buffer.from(seedM).toString('hex'));
+
+    // const seedHex = Buffer.from(seed).toString('hex');
+    // const memo2 = bip39.entropyToMnemonic(seedHex,english);
+    // console.log('memo2:', memo2);
+}
+
 export const run = async (config) => {
+    ttt();
     console.info('Begin to run test tool ...');
     const rli = createInterface({ input, output, terminal: true });
     // const cc = rli.question(WALLET_LOOP_QUESTION)
 
     console.info('Building Wallet ...');
-    walletSdk = new MidnightWalletSDK(config);
+    walletSdk = new MidnightWalletSDK(configuration(config.indexer,config.indexerWS,config.proofServer,NETWORKID),true);
     const serializedState = await readWalletState();
     await walletSdk.initWallet(seed, storeWalletSate, serializedState, 60000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');
     console.info('Wallet Built completly...: address = ', walletSdk.getAccountAddress());
+    console.info('Wallet Balance:', await walletSdk.getBalances());
 
+    await walletSdk.registerNightUtxosForDustGeneration();
+    console.info('Night Utxos registered for dust generation');
+
+    // CombinedTokenTransfer
+    const transferInfo = {
+        type: 'unshielded',
+        outputs:[
+            {
+                type: nativeToken().raw,//ledger.RawTokenType;
+                // receiverAddress: 'mn_addr_preview12qvgwhe5mdr2aq8pem0ugd36zyzq7xss2tgt6yrel6nmfjaqy9xspqume3',//'string;
+                receiverAddress: 'mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s',//'string;
+                amount: 1000000n//bigint;
+            }
+        ]
+    }
+    const txHashTransfer = await walletSdk.transferTo([transferInfo], new Date( Date.now() + 600 * 1000 ));
+    console.log('transferTo txHash:', txHashTransfer);
+    // const amount = 2200152859n;
+    const amount = 10000000n;
+    // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
+    const recevier = 'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk'; // leader
+    const txHash = await transferTo(recevier, amount, nativeToken(),wallet);
+    console.log('transferTo txHash:', txHash);
     try {
         if (wallet !== null) {
             await mainLoop(rli, wallet);
@@ -770,3 +851,11 @@ run(config).catch((e) => {
     console.error(`Error running app: ${e}`);
     process.exit(1);
 });
+
+// async function main(){
+//     await run(config);
+// }
+
+// main();
+
+
