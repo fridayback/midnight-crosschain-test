@@ -11,6 +11,6 @@
   "description": "",
   "dependencies": {
     "dotenv": "^17.2.3",
-    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git#0.10"
+    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git"
   }
 }
