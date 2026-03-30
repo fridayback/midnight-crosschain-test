@@ -130,6 +130,14 @@ const upgradeContract = async (rli) => {
     return await upgradeContractCircuit(api.providers, contractAddress, circuitId, circuitFile.fileComment);
 }
 
+const removeCircuit = async (rli) => {
+    const contractAddress = await rli.question('What is the contract address? ');
+    const circuitId = await rli.question('What is the circuit id? ');
+    
+    console.log(`Removing contract circuit (${contractAddress}) circuitId ${circuitId}`);
+    return await removeContractCircuit(api.providers, contractAddress, circuitId );
+}
+
 const deployOrJoin = async (rli) => {
     try {
         const contractAddr = await fs.readFile('contractAddr', 'ascii');
@@ -145,18 +153,38 @@ const deployOrJoin = async (rli) => {
         const choice = await rli.question(DEPLOY_OR_JOIN_QUESTION);
         switch (choice) {
             case '1':
-                console.log('Begin to deploy contract ...');
-                const contractAddr = await api.deployContract(0n, 1, 'mn_addr_preview164t3m7skgcgnjv7r7xmduxhnznvdvz4wu0pw08ks865cg6eu6nss5xd2sd', 'a2ebc5b7e2f50478398f6d5e609d71e7dfbb307ad3d8883bf5bf46d89e875cff');
-                console.log('Contract deployed at:', contractAddr);
-                await fs.writeFile('contractAddr', contractAddr, 'ascii');
-                return contractAddr;
+                try {
+                    console.log('Begin to deploy contract ...');
+                    const contractAddr = await api.deployContract(0n, 1, 'mn_addr_preview164t3m7skgcgnjv7r7xmduxhnznvdvz4wu0pw08ks865cg6eu6nss5xd2sd', 'a2ebc5b7e2f50478398f6d5e609d71e7dfbb307ad3d8883bf5bf46d89e875cff');
+                    console.log('Contract deployed at:', contractAddr);
+                    await fs.writeFile('contractAddr', contractAddr, 'ascii');
+                    return contractAddr;
+                }catch (error) {
+                    console.log(`Deploy contract error: ${error}`);
+                    // return null;
+                }
             case '2':
                 return await join(rli);
             case '3':
                 console.log('Begin to upgrade circuit ...');
-                const ret = await upgradeContract(rli);
-                console.log(`Upgrade Contract Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
+                try {
+                    const ret = await upgradeContract(rli);
+                    console.log(`Upgrade Contract Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
+                } catch (error) {
+                    console.log(`Upgrade Contract error: ${error}`);
+                    // return null;
+                }
                 break;
+            case '4': {
+                try {
+                    const ret = await removeCircuit(rli);
+                    console.log(`Upgrade Contract Tx at block:${ret.blockHeight} txHash:${ret.blockHash}`);
+                } catch (error) {
+                    console.log(`Upgrade Contract error: ${error}`);
+                    // return null;
+                }
+                break;
+            }
             case '0':
                 console.info('Exiting...');
                 return null;
@@ -168,9 +196,9 @@ const deployOrJoin = async (rli) => {
 
 const tokenPair = [
     {
-        tokenPairId: 1,
-        fromChainId: 1,
-        toChainId: 2,
+        tokenPairId: 1245,
+        fromChainId: 1073741862,
+        toChainId: 2153201998,
         midnightTokenAccount: nativeToken().raw,
         fee: 100,
         isMappingToken: false
@@ -209,8 +237,8 @@ if (NETWORKID === 'preview') {
         indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
         indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
         node: 'https://rpc.preview.midnight.network',
-        proofServer: 'https://lace-proof-pub.preview.midnight.network',//'http://127.0.0.1:6300'//
-        // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
+        // proofServer: 'https://lace-proof-pub.preview.midnight.network',//'http://127.0.0.1:6300'//
+        proofServer: 'http://127.0.0.1:6300',//
         // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
     };
 }
@@ -618,10 +646,10 @@ const mainLoop = async (rli, wallet) => {
                         console.info(`token: ${toHex(uniqueId)}, receiver: ${claimInfo.receiver}, isMappingToken: ${claimInfo.isMappingToken}, amount: ${claimInfo.amount}`);
                     }
                     console.info(`----------------------------------        reserveOfAllToken       ----------------------------------`);
-                    for (const [token, reserve] of state?.reserveOfAllToken ?? []) {
-                        console.info(`token: ${toHex(token)}, reserve: ${reserve.total}, isMappingToken: ${reserve.isMappingToken}`);
-                    }
-                    console.info(`----------------------------------        crossProposal       ----------------------------------`);
+                    // for (const [token, reserve] of state?.reserveOfAllToken ?? []) {
+                    //     console.info(`token: ${toHex(token)}, reserve: ${reserve.total}, isMappingToken: ${reserve.isMappingToken}`);
+                    // }
+                    // console.info(`----------------------------------        crossProposal       ----------------------------------`);
                     for (const proposal of state?.crossProposal ?? []) {
                         let voteInfo = [];
                         const votes = state?.crossProposalVoters.lookup(proposal[0]) ?? [];
@@ -637,6 +665,7 @@ const mainLoop = async (rli, wallet) => {
                     }
 
                     console.info(`---------------------------------- smgPKS ----------------------------------`);
+                    console.log(`voters: smgThreshold = ${state.smgPKThreshold}`);
                     for (const p of state?.smgTxSigners ?? []) {
                         console.info(`currentExecuteCrossProposal: ZswapCoinPublicKey: ${toHex(p[0].bytes)}, index: ${p[1]}`);
                     }
