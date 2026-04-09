@@ -1,16 +1,21 @@
 {
   "name": "midnight-crosschain-test",
   "version": "1.0.0",
-  "main": "index.js",
-
+  "main": "index2.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pkg-cjs": "pkg -c pkg-cjs.json index2.cjs",
+    "pkg-mjs": "pkg -c pkg-mjs.json index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "classic-level": "^3.0.0",
     "dotenv": "^17.2.3",
-    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git"
+    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git#0.20.rc0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }

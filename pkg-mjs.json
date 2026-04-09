@@ -1,0 +1,8 @@
+{
+    "pkg": {
+    "targets": [
+      "node22-linux-x64"
+    ],
+    "outputPath": "bin"
+  }
+}

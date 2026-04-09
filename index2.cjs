@@ -13,24 +13,27 @@
 // // See the License for the specific language governing permissions and
 // // limitations under the License.
 
-import "dotenv/config";
-import { stdin as input, stdout as output } from 'node:process';
-import { createInterface } from 'readline/promises';
-// // import { type Logger } from 'pino';
-import {
+require('dotenv/config');
+const { stdin: input, stdout: output } = require('node:process');
+const { createInterface } = require('readline/promises');
+// // const { type Logger } = require('pino');
+const {
     CrossChainApi, MidnightWalletSDK, initNetwork
-    , pad, getUnshieldAddressFromUserAddress, getCoinPublicKeyFromShieldAddress
-    , upgradeContractCircuit, removeContractCircuit, configuration, ledgerV8, midnightjsutils,
-} from 'midnight-crosschain';
-// import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import * as fs from 'fs/promises'
+    , pad
+    , upgradeContractCircuit, removeContractCircuit, configuration
+    , signData, getTreasuryCoinsFromState
+    , UnshieldedAddress, ShieldedAddress, MidnightBech32m, midnightjsutils,ledgerV8
+} = require('midnight-crosschain');
+const Rx = require('rxjs');
+// const { assertIsContractAddress, fromHex, parseCoinPublicKeyToHex, toHex } = require('@midnight-ntwrk/midnight-js-utils');
+const { assert } = require('node:console');
+// const { CoinInfo, decodeRawTokenType, encodeTokenType, Transaction, TransactionId, tokenType, communicationCommitmentRandomness, sampleCoinPublicKey, encodeCoinInfo, createCoinInfo } = require('@midnight-ntwrk/ledger');
 
-// import * as runtime from '@midnight-ntwrk/compact-runtime'
-import { assert } from 'node:console';
+// const path = require('node:path');
 
-// import path from 'node:path';
-
-import * as bip39 from '@scure/bip39';
+const bip39 = require('@scure/bip39');
+const { getNetworkId } = require('@midnight-ntwrk/midnight-js-network-id');
+const fs = require('fs/promises');
 // import { wordlist as english } from '@scure/bip39/wordlists/english';
 // import * as facade from '@midnight-ntwrk/wallet-sdk-facade';
 // import { MidnightBech32m, ShieldedAddress, UnshieldedAddress } from '@midnight-ntwrk/wallet-sdk-address-format';
@@ -193,7 +196,7 @@ const tokenPair = [
         tokenPairId: 1245,
         fromChainId: 1073741862,
         toChainId: 2153201998,
-        midnightTokenAccount: ledgerV8.nativeToken().raw,
+        midnightTokenAccount: '0000000000000000000000000000000000000000000000000000000000000000',
         fee: 100,
         isMappingToken: false
     },
@@ -274,15 +277,15 @@ const proofData = {
 // console.log(Buffer.from(encodeTokenType('02002d0349c68eb1df471377819ea38d45bffdf1f072b4a54d9a1e93326104b5')).toString('hex'));
 
 
-// export const getUnshieldAddressFromUserAddress = (userAddrHex, networkId) => {
+// const getUnshieldAddressFromUserAddress = (userAddrHex, networkId) => {
 //   const unshieldAddr = UnshieldedAddress.codec.encode(
 //     networkId || getNetworkId(),
 //     new UnshieldedAddress(fromHex(userAddrHex))
 //   );
 //   return unshieldAddr.asString();
-// }
+// };
 
-console.log(getUnshieldAddressFromUserAddress('e0d1d7a4215183c371aa7124c237bd317097c993dfaef0f21c95b74b9ce693e3', NETWORKID));
+// console.log(getUnshieldAddressFromUserAddress('e0d1d7a4215183c371aa7124c237bd317097c993dfaef0f21c95b74b9ce693e3', NETWORKID));
 
 const showCoinsOfToken = (state, tokenType) => {
     // const token = encodeTokenType(tokenType);
@@ -304,12 +307,12 @@ const showCoinsOfToken = (state, tokenType) => {
     }
 }
 
-// export const getCoinPublicKeyFromShieldAddress = (shieldAddr) => {
+// const getCoinPublicKeyFromShieldAddress = (shieldAddr) => {
 //     const tmp1 = MidnightBech32m.parse(shieldAddr);//('mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600');
 //     const tmp2 = ShieldedAddress.codec.decode(tmp1.network, tmp1);
 //     // console.log('coinPublicKeyString:', midnightjsutils.toHex(tmp2.coinPublicKey.data));
 //     return tmp2.coinPublicKeyString();
-// }
+// };
 
 function signProof(proofData) {
     // const proof = api.newProofData(...Object.values(proofData));
@@ -378,10 +381,10 @@ const mainLoop = async (rli, wallet) => {
                     break;
                 }
                 case '2':
-                    const tokenTypeStr = (args && args.length === 1) ? args[0] : ledgerV8.nativeToken();
-                    console.log(`tokenType:${tokenTypeStr}`);
-                    const ledgerState = await api.getLedgerState();
-                    showCoinsOfToken(ledgerState, tokenTypeStr);
+                    // const tokenTypeStr = (args && args.length === 1) ? args[0] : nativeToken();
+                    // console.log(`tokenType:${tokenTypeStr}`);
+                    // const ledgerState = await api.getLedgerState();
+                    // showCoinsOfToken(ledgerState, tokenTypeStr);
                     break;
                 case '3-0': {
                     const state = await api.getLedgerState();
@@ -431,7 +434,7 @@ const mainLoop = async (rli, wallet) => {
                     let domainSep = '';
                     let midnightTokenAccount = tokenPairSelect.midnightTokenAccount;
                     if (tokenPairSelect.isMappingToken) {
-                        midnightTokenAccount = ledgerV8.rawTokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
+                        midnightTokenAccount = rawTokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
                         domainSep = tokenPairSelect.midnightTokenAccount;
                     }
                     console.log(`addTokenPair:${midnightTokenAccount} domainSep:${domainSep}`);
@@ -823,8 +826,8 @@ const readWalletState = async () => {
 let walletSdk;
 
 
-export const transferTo = async (address, amount, coinType, wallet) => {
-    // import { ledgerV8.nativeToken } from '@midnight-ntwrk/zswap';
+const transferTo = async (address, amount, coinType, wallet) => {
+    // const { nativeToken } = require('@midnight-ntwrk/zswap');
 
     const transferRecipe = await wallet.transferTransaction([
         {
@@ -839,7 +842,7 @@ export const transferTo = async (address, amount, coinType, wallet) => {
     // console.log('Transaction submitted:', submittedTransaction);
     return submittedTransaction;
 
-}
+};
 
 async function ttt() {
     const memo = 'guilt upgrade salon ranch puppy cushion envelope table model boat figure garlic chef inspire memory fringe era correct ginger salmon glare tribe tilt tattoo';
@@ -853,7 +856,7 @@ async function ttt() {
     // console.log('memo2:', memo2);
 }
 
-export const run = async (config) => {
+const run = async (config) => {
     ttt();
     console.info('Begin to run test tool ...');
     const rli = createInterface({ input, output, terminal: true });
@@ -877,7 +880,7 @@ export const run = async (config) => {
     //     type: 'unshielded',
     //     outputs: [
     //         {
-    //             type: ledgerV8.nativeToken().raw,//ledger.RawTokenType;
+    //             type: nativeToken().raw,//ledger.RawTokenType;
     //             // receiverAddress: 'mn_addr_preview12qvgwhe5mdr2aq8pem0ugd36zyzq7xss2tgt6yrel6nmfjaqy9xspqume3',//'string;
     //             receiverAddress: 'mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s',//'string;
     //             amount: 1000000n//bigint;
@@ -890,7 +893,7 @@ export const run = async (config) => {
     // const amount = 10000000n;
     // // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
     // const recevier = 'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk'; // leader
-    // const txHash = await transferTo(recevier, amount, ledgerV8.nativeToken(), wallet);
+    // const txHash = await transferTo(recevier, amount, nativeToken(), wallet);
     // console.log('transferTo txHash:', txHash);
     try {
         if (walletSdk !== null) {
@@ -934,6 +937,13 @@ export const run = async (config) => {
     }
 };
 
+
+module.exports = {
+    run,
+    // getUnshieldAddressFromUserAddress,
+    // getCoinPublicKeyFromShieldAddress,
+    transferTo
+};
 
 run(config).catch((e) => {
     console.error(`Error running app: ${e}`);
