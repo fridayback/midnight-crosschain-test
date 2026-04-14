@@ -21,7 +21,7 @@ const {
     CrossChainApi, MidnightWalletSDK, initNetwork
     , pad
     , upgradeContractCircuit, removeContractCircuit, configuration
-    , signData, getTreasuryCoinsFromState
+    , signData, getTreasuryCoinsFromState, getContractState
     , UnshieldedAddress, ShieldedAddress, MidnightBech32m, midnightjsutils,ledgerV8
 } = require('midnight-crosschain');
 const Rx = require('rxjs');
@@ -362,7 +362,8 @@ const mainLoop = async (rli, wallet) => {
     console.log(api.crossChainContract.deployTxData.public.contractAddress);
     console.log(`contract address:${api.crossChainContract.deployTxData.public.contractAddress},deploy block:${api.crossChainContract.deployTxData.public.blockHeight},
         deploy block hash:${api.crossChainContract.deployTxData.public.blockHash}, fee:${api.crossChainContract.deployTxData.public.tx.fees(ledgerV8.LedgerParameters.initialParameters())}`);
-
+    const state = await getContractState(config,counterContract);
+    console.log(`is voter: ${await api.isVoter(state,wallet.getAccountAddress().shieldedAddress)}`);
     // const ret = await api.smgMint('8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422'
     //     , '000000000000000000000000000000000000000000000000006465765f323537'
     //     , 1236, 12345678, 0, 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600', 1762836067017);
@@ -863,9 +864,9 @@ const run = async (config) => {
     // const cc = rli.question(WALLET_LOOP_QUESTION)
 
     console.info('Building Wallet ...');
-    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), false);
+    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed);
     const serializedState = await readWalletState();
-    await walletSdk.initWallet(seed, storeWalletSate, serializedState, 60000);
+    await walletSdk.initWallet(storeWalletSate, serializedState, 60000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');

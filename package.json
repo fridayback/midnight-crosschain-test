@@ -14,7 +14,7 @@
   "dependencies": {
     "classic-level": "^3.0.0",
     "dotenv": "^17.2.3",
-    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git#0.20.rc0"
+    "midnight-crosschain": "https://github.com/fridayback/midnight-crosschain.git#0.20"
   },
   "devDependencies": {
     "esbuild": "^0.28.0"
