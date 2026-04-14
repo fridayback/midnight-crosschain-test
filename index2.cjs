@@ -78,9 +78,9 @@ You can do one of the following:
   6-2. userClaimMappingToken [id]
   0. Exit
 Which would you like to do? `;
-const NETWORKID = 'preview';//'undeployed';//
+// const NETWORKID = 'preview';//'undeployed';//
 // const NETWORKID = 'undeployed';//'undeployed';//
-// const NETWORKID = 'preprod';
+const NETWORKID = 'preprod';
 // const NETWORKID = 'mainnet';
 initNetwork(NETWORKID);
 const api = new CrossChainApi();
@@ -218,46 +218,8 @@ const tokenPair = [
     }
 ]
 
-let config = {
-    // logDir: `testnet-remote.log`,
-    indexer: 'http://127.0.0.1:8088/api/v3/graphql',//'https://indexer.preview.midnight.network/api/v3/graphql',
-    indexerWS: 'ws://127.0.0.1:8088/api/v3/graphql/ws',//'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-    node: 'http://127.0.0.1:9944',//'https://rpc.preview.midnight.network',
-    // proofServer: 'http://127.0.0.1:6300',//'http://127.0.0.1:6300'//
-    // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
-    // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
-};
+const config = require('./config.json')[NETWORKID];
 
-if (NETWORKID === 'preview') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.preview.midnight.network',
-        // proofServer: 'https://lace-proof-pub.preview.midnight.network',//'http://127.0.0.1:6300'//
-        // proofServer: 'http://127.0.0.1:6300',//
-        proofServer: 'http://35.163.105.105:6300',
-        // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
-    };
-}
-if (NETWORKID === 'preprod') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.preprod.midnight.network',
-        proofServer: 'https://lace-proof-pub.preprod.midnight.network',//'http://
-    };
-}
-if (NETWORKID === 'mainnet') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.mainnet.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.mainnet.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.mainnet.midnight.network',
-        proofServer: 'https://lace-proof-pub.mainnet.midnight.network'
-    };
-}
 
 const proofData = {
     smgId: '0000000000000000000000000000000000000000000000000000000000000001',
@@ -815,11 +777,11 @@ const seed = process.env.SEED;
 
 
 const storeWalletSate = async (state) => {
-    await fs.writeFile('./serialized-state-' + seed, JSON.stringify(state), 'ascii');
+    await fs.writeFile('./serialized-state'+NETWORKID+'-'+seed, JSON.stringify(state), 'ascii');
 }
 const readWalletState = async () => {
     try {
-        return JSON.parse(await fs.readFile('./serialized-state-' + seed, 'ascii'));
+        return JSON.parse(await fs.readFile('./serialized-state-' + NETWORKID + '-' + seed, 'ascii'));
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }

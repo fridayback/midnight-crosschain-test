@@ -134,7 +134,7 @@ const removeCircuit = async (rli) => {
 
 const deployOrJoin = async (rli) => {
     try {
-        const contractAddr = await fs.readFile('contractAddr', 'ascii');
+        const contractAddr = await fs.readFile('contractAddr_'+NETWORKID, 'ascii');
         if (!contractAddr) throw new Error('No contract address found, deploying new contract or specify a contract address ...');
         await api.join(contractAddr);
         return contractAddr;
@@ -151,7 +151,7 @@ const deployOrJoin = async (rli) => {
                     console.log('Begin to deploy contract ...');
                     const contractAddr = await api.deployContract(0n, 1, 'mn_addr_preview164t3m7skgcgnjv7r7xmduxhnznvdvz4wu0pw08ks865cg6eu6nss5xd2sd', 'a2ebc5b7e2f50478398f6d5e609d71e7dfbb307ad3d8883bf5bf46d89e875cff');
                     console.log('Contract deployed at:', contractAddr);
-                    await fs.writeFile('contractAddr', contractAddr, 'ascii');
+                    await fs.writeFile('contractAddr_'+NETWORKID, contractAddr, 'ascii');
                     return contractAddr;
                 }catch (error) {
                     console.log(`Deploy contract error: ${error}`);
@@ -215,46 +215,8 @@ const tokenPair = [
     }
 ]
 
-let config = {
-    // logDir: `testnet-remote.log`,
-    indexer: 'http://127.0.0.1:8088/api/v3/graphql',//'https://indexer.preview.midnight.network/api/v3/graphql',
-    indexerWS: 'ws://127.0.0.1:8088/api/v3/graphql/ws',//'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-    node: 'http://127.0.0.1:9944',//'https://rpc.preview.midnight.network',
-    // proofServer: 'http://127.0.0.1:6300',//'http://127.0.0.1:6300'//
-    // proofServer: 'http://44.229.225.45:6300',//'http://127.0.0.1:6300'//
-    // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
-};
-
-if (NETWORKID === 'preview') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.preview.midnight.network',
-        // proofServer: 'https://lace-proof-pub.preview.midnight.network',//'http://127.0.0.1:6300'//
-        // proofServer: 'http://127.0.0.1:6300',//
-        proofServer: 'http://35.163.105.105:6300',
-        // zkConfigPath: '/home/liulin/midnight/midnight-crosschain/src/managed/crosschain/'
-    };
-}
-if (NETWORKID === 'preprod') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.preprod.midnight.network',
-        proofServer: 'https://lace-proof-pub.preprod.midnight.network',//'http://
-    };
-}
-if (NETWORKID === 'mainnet') {
-    config = {
-        // logDir: `testnet-remote.log`,
-        indexer: 'https://indexer.mainnet.midnight.network/api/v3/graphql',
-        indexerWS: 'wss://indexer.mainnet.midnight.network/api/v3/graphql/ws',
-        node: 'https://rpc.mainnet.midnight.network',
-        proofServer: 'https://lace-proof-pub.mainnet.midnight.network'
-    };
-}
+import configAll from './config.json'  with { type: 'json' };;
+const config = configAll[NETWORKID];
 
 const proofData = {
     smgId: '0000000000000000000000000000000000000000000000000000000000000001',
@@ -812,11 +774,11 @@ const seed = process.env.SEED;
 
 
 const storeWalletSate = async (state) => {
-    await fs.writeFile('./serialized-state-' + seed, JSON.stringify(state), 'ascii');
+    await fs.writeFile('./serialized-state'+NETWORKID+'-'+seed, JSON.stringify(state), 'ascii');
 }
 const readWalletState = async () => {
     try {
-        return JSON.parse(await fs.readFile('./serialized-state-' + seed, 'ascii'));
+        return JSON.parse(await fs.readFile('./serialized-state-' + NETWORKID + '-' + seed, 'ascii'));
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }
