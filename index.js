@@ -651,12 +651,7 @@ const mainLoop = async (rli, wallet) => {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
                         'mn_shield-addr_preview1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncgt5ns4c',
-                        'mn_shield-addr_preview1xjrhteqnyh2r0ydrh3ysd4fwznfdmlm2f4k4sze432s92tu236vlhf747xdkd0p0f5d44vyaem632ld3pm2d097jx5vk33nnw69tkzqp8keyu',
-                        'mn_shield-addr_test10hcfzy7ehc8ajc3rg5673meg3vdln3x83cs2dstr7eadcrvzxg4qxq8u3y3q8d30vrfpslszkhpemzk24s0q2jjmrx6dlgj59g8newzr5csnwdw8',
-                        'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c',
-                        'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk', //leader
-                        'mn_shield-addr_test13qpnw0xntfpnthd4mv5kvm3gmyg5cculauk7psd79l99zvpxk6msxqre6q676xp5v7a9qh4ws5ykk45lewcd0dn2kyyztn3fkt6q40rl7vxu7hfq',
-                        'mn_shield-addr_preview1sgm4nvj0sppphegvwe3nlm3zq2770c32u9dpl7346srmytj2yfa7zfetf565jf6qp0s0xx5dvggjcygjmp34gflw7fmefe498cw0dqc2m9ux2'
+                        'mn_shield-addr_preview1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqeyd553'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);

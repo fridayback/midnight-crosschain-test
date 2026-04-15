@@ -137,7 +137,7 @@ const removeCircuit = async (rli) => {
 
 const deployOrJoin = async (rli) => {
     try {
-        const contractAddr = await fs.readFile('contractAddr', 'ascii');
+        const contractAddr = await fs.readFile('contractAddr_'+NETWORKID, 'ascii');
         if (!contractAddr) throw new Error('No contract address found, deploying new contract or specify a contract address ...');
         await api.join(contractAddr);
         return contractAddr;
@@ -154,7 +154,7 @@ const deployOrJoin = async (rli) => {
                     console.log('Begin to deploy contract ...');
                     const contractAddr = await api.deployContract(0n, 1, 'mn_addr_preview164t3m7skgcgnjv7r7xmduxhnznvdvz4wu0pw08ks865cg6eu6nss5xd2sd', 'a2ebc5b7e2f50478398f6d5e609d71e7dfbb307ad3d8883bf5bf46d89e875cff');
                     console.log('Contract deployed at:', contractAddr);
-                    await fs.writeFile('contractAddr', contractAddr, 'ascii');
+                    await fs.writeFile('contractAddr_'+NETWORKID, contractAddr, 'ascii');
                     return contractAddr;
                 }catch (error) {
                     console.log(`Deploy contract error: ${error}`);
@@ -196,7 +196,7 @@ const tokenPair = [
         tokenPairId: 1245,
         fromChainId: 1073741862,
         toChainId: 2153201998,
-        midnightTokenAccount: '0000000000000000000000000000000000000000000000000000000000000000',
+        midnightTokenAccount: ledgerV8.nativeToken().raw,
         fee: 100,
         isMappingToken: false
     },
@@ -344,7 +344,7 @@ const mainLoop = async (rli, wallet) => {
                     break;
                 }
                 case '2':
-                    // const tokenTypeStr = (args && args.length === 1) ? args[0] : nativeToken();
+                    // const tokenTypeStr = (args && args.length === 1) ? args[0] : ledgerV8.nativeToken().raw;
                     // console.log(`tokenType:${tokenTypeStr}`);
                     // const ledgerState = await api.getLedgerState();
                     // showCoinsOfToken(ledgerState, tokenTypeStr);
@@ -397,7 +397,7 @@ const mainLoop = async (rli, wallet) => {
                     let domainSep = '';
                     let midnightTokenAccount = tokenPairSelect.midnightTokenAccount;
                     if (tokenPairSelect.isMappingToken) {
-                        midnightTokenAccount = rawTokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
+                        midnightTokenAccount = ledgerV8.rawTokenType(pad(tokenPairSelect.midnightTokenAccount, 32), api.crossChainContract.deployTxData.public.contractAddress);
                         domainSep = tokenPairSelect.midnightTokenAccount;
                     }
                     console.log(`addTokenPair:${midnightTokenAccount} domainSep:${domainSep}`);
@@ -653,13 +653,7 @@ const mainLoop = async (rli, wallet) => {
                 case '5-1': {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
-                        'mn_shield-addr_preview1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncgt5ns4c',
-                        'mn_shield-addr_preview1xjrhteqnyh2r0ydrh3ysd4fwznfdmlm2f4k4sze432s92tu236vlhf747xdkd0p0f5d44vyaem632ld3pm2d097jx5vk33nnw69tkzqp8keyu',
-                        'mn_shield-addr_test10hcfzy7ehc8ajc3rg5673meg3vdln3x83cs2dstr7eadcrvzxg4qxq8u3y3q8d30vrfpslszkhpemzk24s0q2jjmrx6dlgj59g8newzr5csnwdw8',
-                        'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c',
-                        'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk', //leader
-                        'mn_shield-addr_test13qpnw0xntfpnthd4mv5kvm3gmyg5cculauk7psd79l99zvpxk6msxqre6q676xp5v7a9qh4ws5ykk45lewcd0dn2kyyztn3fkt6q40rl7vxu7hfq',
-                        'mn_shield-addr_preview1sgm4nvj0sppphegvwe3nlm3zq2770c32u9dpl7346srmytj2yfa7zfetf565jf6qp0s0xx5dvggjcygjmp34gflw7fmefe498cw0dqc2m9ux2'
+                        'mn_shield-addr_preprod1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncg5emcc2'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
