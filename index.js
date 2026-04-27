@@ -773,7 +773,7 @@ const storeWalletSate = async (state) => {
 }
 const readWalletState = async () => {
     try {
-        return JSON.parse(await fs.readFile('./serialized-state-' + NETWORKID + '-' + seed, 'ascii'));
+        return JSON.parse(await fs.readFile('./serialized-state' + NETWORKID + '-' + seed, 'ascii'));
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }

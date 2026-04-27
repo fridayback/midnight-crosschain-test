@@ -486,7 +486,7 @@ const mainLoop = async (rli, wallet) => {
                         const addr = 'mn_addr_preview1g3u2n6skg9c0hr7agsfphy306zwv598revusccdqwtenxhlxs5aqfnc9t3';
                         proofData = {
                             smgId: smgId,
-                            uniqueId: '0000000000000000000000000000000000000000000000000000000000000538',
+                            uniqueId: midnightjsutils.toHex((pad(Date.now()+'', 32))),
                             tokenPairId: 1236,
                             amount: 12345678,
                             fee: 100,
@@ -653,7 +653,8 @@ const mainLoop = async (rli, wallet) => {
                 case '5-1': {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
-                        'mn_shield-addr_preprod1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncg5emcc2'
+                        'mn_shield-addr_preprod1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncg5emcc2',
+                        'mn_shield-addr_preprod1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqxf9uer'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
@@ -775,7 +776,7 @@ const storeWalletSate = async (state) => {
 }
 const readWalletState = async () => {
     try {
-        return JSON.parse(await fs.readFile('./serialized-state-' + NETWORKID + '-' + seed, 'ascii'));
+        return JSON.parse(await fs.readFile('./serialized-state' + NETWORKID + '-' + seed, 'ascii'));
     } catch (error) {
         console.error(`Error reading wallet state: ${error}`);
     }
