@@ -75,9 +75,9 @@ You can do one of the following:
   6-2. userClaimMappingToken [id]
   0. Exit
 Which would you like to do? `;
-const NETWORKID = 'preview';//'undeployed';//
+// const NETWORKID = 'preview';//'undeployed';//
 // const NETWORKID = 'undeployed';//'undeployed';//
-// const NETWORKID = 'preprod';
+const NETWORKID = 'preprod';
 // const NETWORKID = 'mainnet';
 initNetwork(NETWORKID);
 const api = new CrossChainApi();

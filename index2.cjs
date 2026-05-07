@@ -44,6 +44,12 @@ const fs = require('fs/promises');
 //  * This seed gives access to tokens minted in the genesis block of a local development node - only
 //  * used in standalone networks to build a wallet with initial funds.
 //  */
+
+setInterval(() => {
+    if(global.wasmMap && global.wasmMap.ledger && global.wasmMap.onchain_runtime){
+    console.log('WASM_Memory:', 'ledger=', global.wasmMap.ledger.memory.buffer.byteLength/1e6, 'runtime=', global.wasmMap.onchain_runtime.memory.buffer.byteLength/1e6);
+}
+}, 10000);
 const GENESIS_MINT_WALLET_SEED = '0000000000000000000000000000000000000000000000000000000000000001';
 
 const DEPLOY_OR_JOIN_QUESTION = `
@@ -325,7 +331,7 @@ const mainLoop = async (rli, wallet) => {
     console.log(`contract address:${api.crossChainContract.deployTxData.public.contractAddress},deploy block:${api.crossChainContract.deployTxData.public.blockHeight},
         deploy block hash:${api.crossChainContract.deployTxData.public.blockHash}, fee:${api.crossChainContract.deployTxData.public.tx.fees(ledgerV8.LedgerParameters.initialParameters())}`);
     const state = await getContractState(config,counterContract);
-    console.log(`is voter: ${await api.isVoter(state,wallet.getAccountAddress().shieldedAddress)}`);
+    console.log(`is voter: ${await api.isVoter(state.ledgerState,wallet.getAccountAddress().shieldedAddress)}`);
     // const ret = await api.smgMint('8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422'
     //     , '000000000000000000000000000000000000000000000000006465765f323537'
     //     , 1236, 12345678, 0, 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600', 1762836067017);
@@ -661,6 +667,12 @@ const mainLoop = async (rli, wallet) => {
                     break;
                 }
                 case '5-2': {
+                    try {
+                        await wallet.getBalances();
+                    } catch (error) {
+                        console.error('Error occurred while fetching wallet balances:', error);
+                    }
+                    
                     const res = await api.setSmgPKThreold(args[0]);
                     console.log('setSmgPKThreold res:', res.public.blockHash, res.public.blockHeight);
                     break;
@@ -812,6 +824,11 @@ async function ttt() {
     // const seedHex = Buffer.from(seed).toString('hex');
     // const memo2 = bip39.entropyToMnemonic(seedHex,english);
     // console.log('memo2:', memo2);
+
+    const state = await getContractState({
+        "indexer": "https://indexer.preprod.midnight.network/api/v4/graphql",
+        "indexerWS": "wss://indexer.preprod.midnight.network/api/v4/graphql/ws",},'e18145baaee32c097b65a7a8100f196cef5790c07e1814d62a309c9a082837ae');
+    console.log('state:', state);
 }
 
 const run = async (config) => {
@@ -823,7 +840,8 @@ const run = async (config) => {
     console.info('Building Wallet ...');
     walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed);
     const serializedState = await readWalletState();
-    await walletSdk.initWallet(storeWalletSate, serializedState, 60000);
+    console.log(MidnightWalletSDK.getDustBalanceFromDustState(JSON.parse(serializedState.dustWalletState).state));
+    await walletSdk.initWallet(storeWalletSate, serializedState, 6000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');
