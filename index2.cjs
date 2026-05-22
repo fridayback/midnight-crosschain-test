@@ -660,7 +660,9 @@ const mainLoop = async (rli, wallet) => {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
                         'mn_shield-addr_preprod1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncg5emcc2',
-                        'mn_shield-addr_preprod1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqxf9uer'
+                        'mn_shield-addr_preprod1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqxf9uer',
+                        'mn_shield-addr_preprod16a3hmlkunjxl2lj9x0r726netgdzydh7cy9xs26u3xerd7da02sdetjqfa06uyskzr5my9vegc9v4n2x0pfgh3m84j9kj9vtfq3862cz48rym',
+                        'mn_shield-addr_preprod15thmlc6p0qe5zvlgvq0kg996qxpv5cqzyfq44dkp5a5ephhxkrc3kdu3zdl7ayzf73e2wqdjf7h9vh8qc6cv6fs2lzcfyr6dx3v08mqllg7e6'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
@@ -838,10 +840,10 @@ const run = async (config) => {
     // const cc = rli.question(WALLET_LOOP_QUESTION)
 
     console.info('Building Wallet ...');
-    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed);
+    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed,60000,120000);
     const serializedState = await readWalletState();
-    console.log(MidnightWalletSDK.getDustBalanceFromDustState(JSON.parse(serializedState.dustWalletState).state));
-    await walletSdk.initWallet(storeWalletSate, serializedState, 6000);
+    if(serializedState) console.log(MidnightWalletSDK.getDustBalanceFromDustState(JSON.parse(serializedState.dustWalletState).state));
+    await walletSdk.initWallet(storeWalletSate, serializedState, 10000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');
@@ -851,25 +853,25 @@ const run = async (config) => {
     await walletSdk.registerNightUtxosForDustGeneration();
     console.info('Night Utxos registered for dust generation');
 
-    // CombinedTokenTransfer
+    // // CombinedTokenTransfer
     // const transferInfo = {
     //     type: 'unshielded',
     //     outputs: [
     //         {
     //             type: nativeToken().raw,//ledger.RawTokenType;
     //             // receiverAddress: 'mn_addr_preview12qvgwhe5mdr2aq8pem0ugd36zyzq7xss2tgt6yrel6nmfjaqy9xspqume3',//'string;
-    //             receiverAddress: 'mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s',//'string;
-    //             amount: 1000000n//bigint;
+    //             receiverAddress: 'mn_addr_preprod16pyl7eedhw32qvc835evjpm5kmqjyhnp8yw3w00ps6rqlluzh0es49xtgw',//'string;
+    //             amount: 500000000n//bigint;
     //         }
     //     ]
     // }
     // const txHashTransfer = await walletSdk.transferTo([transferInfo], new Date(Date.now() + 600 * 1000));
     // console.log('transferTo txHash:', txHashTransfer);
-    // // const amount = 2200152859n;
-    // const amount = 10000000n;
-    // // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
-    // const recevier = 'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk'; // leader
-    // const txHash = await transferTo(recevier, amount, nativeToken(), wallet);
+    // const amount = 2200152859n;
+    const amount = 500000000n;
+    // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
+    const recevier = 'mn_shield-mn_addr_preprod16pyl7eedhw32qvc835evjpm5kmqjyhnp8yw3w00ps6rqlluzh0es49xtgw'; // leader
+    // const txHash = await transferTo(recevier, amount, ledgerV8.nativeToken().raw, wallet);
     // console.log('transferTo txHash:', txHash);
     try {
         if (walletSdk !== null) {

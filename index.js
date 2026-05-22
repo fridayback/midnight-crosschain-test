@@ -818,7 +818,7 @@ export const run = async (config) => {
     // const cc = rli.question(WALLET_LOOP_QUESTION)
 
     console.info('Building Wallet ...');
-    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed );
+    walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed,60000,120000);
     const serializedState = await readWalletState();
     await walletSdk.initWallet(storeWalletSate, serializedState, 60000);
     const wallet = walletSdk.getWalletInstance();
