@@ -1,0 +1,13 @@
+{
+    "pkg": {
+    "assets": [
+      "node_modules/midnight-crosschain/dist/*.wasm",
+      "node_modules/classic-level/prebuilds/**",
+      "node_modules/midnight-crosschain/dist/managed/**/*"
+    ],
+    "targets": [
+      "node22-linux-x64"
+    ],
+    "outputPath": "bin"
+  }
+}

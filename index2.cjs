@@ -13,24 +13,27 @@
 // // See the License for the specific language governing permissions and
 // // limitations under the License.
 
-import "dotenv/config";
-import { stdin as input, stdout as output } from 'node:process';
-import { createInterface } from 'readline/promises';
-// // import { type Logger } from 'pino';
-import {
-    CrossChainApi, MidnightWalletSDK, initNetwork,getContractState
-    , pad, getUnshieldAddressFromUserAddress, getCoinPublicKeyFromShieldAddress
-    , upgradeContractCircuit, removeContractCircuit, configuration, ledgerV8, midnightjsutils,
-} from 'midnight-crosschain';
-// import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import * as fs from 'fs/promises'
+require('dotenv/config');
+const { stdin: input, stdout: output } = require('node:process');
+const { createInterface } = require('readline/promises');
+// // const { type Logger } = require('pino');
+const {
+    CrossChainApi, MidnightWalletSDK, initNetwork
+    , pad
+    , upgradeContractCircuit, removeContractCircuit, configuration
+    , signData, getTreasuryCoinsFromState, getContractState
+    , UnshieldedAddress, ShieldedAddress, MidnightBech32m, midnightjsutils,ledgerV8
+} = require('midnight-crosschain');
+const Rx = require('rxjs');
+// const { assertIsContractAddress, fromHex, parseCoinPublicKeyToHex, toHex } = require('@midnight-ntwrk/midnight-js-utils');
+const { assert } = require('node:console');
+// const { CoinInfo, decodeRawTokenType, encodeTokenType, Transaction, TransactionId, tokenType, communicationCommitmentRandomness, sampleCoinPublicKey, encodeCoinInfo, createCoinInfo } = require('@midnight-ntwrk/ledger');
 
-// import * as runtime from '@midnight-ntwrk/compact-runtime'
-import { assert } from 'node:console';
+// const path = require('node:path');
 
-// import path from 'node:path';
-
-import * as bip39 from '@scure/bip39';
+const bip39 = require('@scure/bip39');
+const { getNetworkId } = require('@midnight-ntwrk/midnight-js-network-id');
+const fs = require('fs/promises');
 // import { wordlist as english } from '@scure/bip39/wordlists/english';
 // import * as facade from '@midnight-ntwrk/wallet-sdk-facade';
 // import { MidnightBech32m, ShieldedAddress, UnshieldedAddress } from '@midnight-ntwrk/wallet-sdk-address-format';
@@ -41,6 +44,12 @@ import * as bip39 from '@scure/bip39';
 //  * This seed gives access to tokens minted in the genesis block of a local development node - only
 //  * used in standalone networks to build a wallet with initial funds.
 //  */
+
+setInterval(() => {
+    if(global.wasmMap && global.wasmMap.ledger && global.wasmMap.onchain_runtime){
+    console.log('WASM_Memory:', 'ledger=', global.wasmMap.ledger.memory.buffer.byteLength/1e6, 'runtime=', global.wasmMap.onchain_runtime.memory.buffer.byteLength/1e6);
+}
+}, 10000);
 const GENESIS_MINT_WALLET_SEED = '0000000000000000000000000000000000000000000000000000000000000001';
 
 const DEPLOY_OR_JOIN_QUESTION = `
@@ -215,8 +224,8 @@ const tokenPair = [
     }
 ]
 
-import configAll from './config.json'  with { type: 'json' };;
-const config = configAll[NETWORKID];
+const config = require('./config.json')[NETWORKID];
+
 
 const proofData = {
     smgId: '0000000000000000000000000000000000000000000000000000000000000001',
@@ -236,15 +245,15 @@ const proofData = {
 // console.log(Buffer.from(encodeTokenType('02002d0349c68eb1df471377819ea38d45bffdf1f072b4a54d9a1e93326104b5')).toString('hex'));
 
 
-// export const getUnshieldAddressFromUserAddress = (userAddrHex, networkId) => {
+// const getUnshieldAddressFromUserAddress = (userAddrHex, networkId) => {
 //   const unshieldAddr = UnshieldedAddress.codec.encode(
 //     networkId || getNetworkId(),
 //     new UnshieldedAddress(fromHex(userAddrHex))
 //   );
 //   return unshieldAddr.asString();
-// }
+// };
 
-console.log(getUnshieldAddressFromUserAddress('e0d1d7a4215183c371aa7124c237bd317097c993dfaef0f21c95b74b9ce693e3', NETWORKID));
+// console.log(getUnshieldAddressFromUserAddress('e0d1d7a4215183c371aa7124c237bd317097c993dfaef0f21c95b74b9ce693e3', NETWORKID));
 
 const showCoinsOfToken = (state, tokenType) => {
     // const token = encodeTokenType(tokenType);
@@ -266,12 +275,12 @@ const showCoinsOfToken = (state, tokenType) => {
     }
 }
 
-// export const getCoinPublicKeyFromShieldAddress = (shieldAddr) => {
+// const getCoinPublicKeyFromShieldAddress = (shieldAddr) => {
 //     const tmp1 = MidnightBech32m.parse(shieldAddr);//('mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600');
 //     const tmp2 = ShieldedAddress.codec.decode(tmp1.network, tmp1);
 //     // console.log('coinPublicKeyString:', midnightjsutils.toHex(tmp2.coinPublicKey.data));
 //     return tmp2.coinPublicKeyString();
-// }
+// };
 
 function signProof(proofData) {
     // const proof = api.newProofData(...Object.values(proofData));
@@ -321,8 +330,8 @@ const mainLoop = async (rli, wallet) => {
     console.log(api.crossChainContract.deployTxData.public.contractAddress);
     console.log(`contract address:${api.crossChainContract.deployTxData.public.contractAddress},deploy block:${api.crossChainContract.deployTxData.public.blockHeight},
         deploy block hash:${api.crossChainContract.deployTxData.public.blockHash}, fee:${api.crossChainContract.deployTxData.public.tx.fees(ledgerV8.LedgerParameters.initialParameters())}`);
-        const state = await getContractState(config,counterContract);
-    console.log(`is voter: ${await api.isVoter(state,wallet.getAccountAddress().shieldedAddress)}`);
+    const state = await getContractState(config,counterContract);
+    console.log(`is voter: ${await api.isVoter(state.ledgerState,wallet.getAccountAddress().shieldedAddress)}`);
     // const ret = await api.smgMint('8612999a5702039d16e48ec4c605bd83a4b8518cab706c29f7db89219d648422'
     //     , '000000000000000000000000000000000000000000000000006465765f323537'
     //     , 1236, 12345678, 0, 'mn_shield-addr_test10th0dtqgnpanzwmqj236zccpkmj9xxpkl7r7e7cr5e3v7k0stm5qxqxa9m6z5f4603nyuu4kw9c65ektu48hhyrtu2f07h42ycppkvw9ccyry600', 1762836067017);
@@ -341,10 +350,10 @@ const mainLoop = async (rli, wallet) => {
                     break;
                 }
                 case '2':
-                    const tokenTypeStr = (args && args.length === 1) ? args[0] : ledgerV8.nativeToken();
-                    console.log(`tokenType:${tokenTypeStr}`);
-                    const ledgerState = await api.getLedgerState();
-                    showCoinsOfToken(ledgerState, tokenTypeStr);
+                    // const tokenTypeStr = (args && args.length === 1) ? args[0] : ledgerV8.nativeToken().raw;
+                    // console.log(`tokenType:${tokenTypeStr}`);
+                    // const ledgerState = await api.getLedgerState();
+                    // showCoinsOfToken(ledgerState, tokenTypeStr);
                     break;
                 case '3-0': {
                     const state = await api.getLedgerState();
@@ -483,7 +492,7 @@ const mainLoop = async (rli, wallet) => {
                         const addr = 'mn_addr_preview1g3u2n6skg9c0hr7agsfphy306zwv598revusccdqwtenxhlxs5aqfnc9t3';
                         proofData = {
                             smgId: smgId,
-                            uniqueId: '0000000000000000000000000000000000000000000000000000000000000538',
+                            uniqueId: midnightjsutils.toHex((pad(Date.now()+'', 32))),
                             tokenPairId: 1236,
                             amount: 12345678,
                             fee: 100,
@@ -650,14 +659,22 @@ const mainLoop = async (rli, wallet) => {
                 case '5-1': {
                     // const state = await Rx.firstValueFrom(wallet.state());
                     const pks = [
-                        'mn_shield-addr_preview1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncgt5ns4c',
-                        'mn_shield-addr_preview1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqeyd553'
+                        'mn_shield-addr_preprod1p6j6szf46323jn986zqqa2rnvdla5j8ypfdwj7xzeh6c5a8dzzx2mpm3qhta0d6sfdwgfrdyy8dfwc9cyzpuuzyg9xq0vp3uex5xncg5emcc2',
+                        'mn_shield-addr_preprod1cr72xnzw8gcum37e4t7qxz7z6jq4f6s0gzexkjt0uskxt3480rjgkplct2hxav55ug0ks3mj2udn8antmmgcscukpr0j2xf2z6m8gmqxf9uer',
+                        'mn_shield-addr_preprod16a3hmlkunjxl2lj9x0r726netgdzydh7cy9xs26u3xerd7da02sdetjqfa06uyskzr5my9vegc9v4n2x0pfgh3m84j9kj9vtfq3862cz48rym',
+                        'mn_shield-addr_preprod15thmlc6p0qe5zvlgvq0kg996qxpv5cqzyfq44dkp5a5ephhxkrc3kdu3zdl7ayzf73e2wqdjf7h9vh8qc6cv6fs2lzcfyr6dx3v08mqllg7e6'
                     ]
                     const res = await api.setSmgPksks(pks);
                     console.log('setSmgPksks res:', res.public.blockHash, res.public.blockHeight);
                     break;
                 }
                 case '5-2': {
+                    try {
+                        await wallet.getBalances();
+                    } catch (error) {
+                        console.error('Error occurred while fetching wallet balances:', error);
+                    }
+                    
                     const res = await api.setSmgPKThreold(args[0]);
                     console.log('setSmgPKThreold res:', res.public.blockHash, res.public.blockHeight);
                     break;
@@ -781,8 +798,8 @@ const readWalletState = async () => {
 let walletSdk;
 
 
-export const transferTo = async (address, amount, coinType, wallet) => {
-    // import { ledgerV8.nativeToken } from '@midnight-ntwrk/zswap';
+const transferTo = async (address, amount, coinType, wallet) => {
+    // const { nativeToken } = require('@midnight-ntwrk/zswap');
 
     const transferRecipe = await wallet.transferTransaction([
         {
@@ -797,7 +814,7 @@ export const transferTo = async (address, amount, coinType, wallet) => {
     // console.log('Transaction submitted:', submittedTransaction);
     return submittedTransaction;
 
-}
+};
 
 async function ttt() {
     const memo = 'guilt upgrade salon ranch puppy cushion envelope table model boat figure garlic chef inspire memory fringe era correct ginger salmon glare tribe tilt tattoo';
@@ -809,9 +826,14 @@ async function ttt() {
     // const seedHex = Buffer.from(seed).toString('hex');
     // const memo2 = bip39.entropyToMnemonic(seedHex,english);
     // console.log('memo2:', memo2);
+
+    const state = await getContractState({
+        "indexer": "https://indexer.preprod.midnight.network/api/v4/graphql",
+        "indexerWS": "wss://indexer.preprod.midnight.network/api/v4/graphql/ws",},'e18145baaee32c097b65a7a8100f196cef5790c07e1814d62a309c9a082837ae');
+    console.log('state:', state);
 }
 
-export const run = async (config) => {
+const run = async (config) => {
     ttt();
     console.info('Begin to run test tool ...');
     const rli = createInterface({ input, output, terminal: true });
@@ -820,7 +842,8 @@ export const run = async (config) => {
     console.info('Building Wallet ...');
     walletSdk = new MidnightWalletSDK(configuration(config.indexer, config.indexerWS, config.proofServer, config.node, NETWORKID), seed,60000,120000);
     const serializedState = await readWalletState();
-    await walletSdk.initWallet(storeWalletSate, serializedState, 60000);
+    if(serializedState) console.log(MidnightWalletSDK.getDustBalanceFromDustState(JSON.parse(serializedState.dustWalletState).state));
+    await walletSdk.initWallet(storeWalletSate, serializedState, 10000);
     const wallet = walletSdk.getWalletInstance();
     // const wallet = await buildWallet(config);
     assert(wallet !== null, 'Wallet is null');
@@ -830,25 +853,25 @@ export const run = async (config) => {
     await walletSdk.registerNightUtxosForDustGeneration();
     console.info('Night Utxos registered for dust generation');
 
-    // CombinedTokenTransfer
+    // // CombinedTokenTransfer
     // const transferInfo = {
     //     type: 'unshielded',
     //     outputs: [
     //         {
-    //             type: ledgerV8.nativeToken().raw,//ledger.RawTokenType;
+    //             type: nativeToken().raw,//ledger.RawTokenType;
     //             // receiverAddress: 'mn_addr_preview12qvgwhe5mdr2aq8pem0ugd36zyzq7xss2tgt6yrel6nmfjaqy9xspqume3',//'string;
-    //             receiverAddress: 'mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s',//'string;
-    //             amount: 1000000n//bigint;
+    //             receiverAddress: 'mn_addr_preprod16pyl7eedhw32qvc835evjpm5kmqjyhnp8yw3w00ps6rqlluzh0es49xtgw',//'string;
+    //             amount: 500000000n//bigint;
     //         }
     //     ]
     // }
     // const txHashTransfer = await walletSdk.transferTo([transferInfo], new Date(Date.now() + 600 * 1000));
     // console.log('transferTo txHash:', txHashTransfer);
-    // // const amount = 2200152859n;
-    // const amount = 10000000n;
-    // // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
-    // const recevier = 'mn_shield-addr_test1njp03sr3jt7zyvc4wrt4vx92uj8xr5n8v5c8d788nw4s8yf9hl3qxqq0qxj3ykc53qys0tyxpd7pzq4m9x9vhecjfxcprjphv00wam735vt84rjk'; // leader
-    // const txHash = await transferTo(recevier, amount, ledgerV8.nativeToken(), wallet);
+    // const amount = 2200152859n;
+    const amount = 500000000n;
+    // const recevier = 'mn_shield-addr_test1sdpznllsf28fwwk43slqtja8249efd6666fjmr93ak7nxczamdlsxqz7y7wz462nyw4l8wa9l62e797wzafcp3mqj0tj9wzg9qcfmpwc8vx80n5c';
+    const recevier = 'mn_shield-mn_addr_preprod16pyl7eedhw32qvc835evjpm5kmqjyhnp8yw3w00ps6rqlluzh0es49xtgw'; // leader
+    // const txHash = await transferTo(recevier, amount, ledgerV8.nativeToken().raw, wallet);
     // console.log('transferTo txHash:', txHash);
     try {
         if (walletSdk !== null) {
@@ -892,6 +915,13 @@ export const run = async (config) => {
     }
 };
 
+
+module.exports = {
+    run,
+    // getUnshieldAddressFromUserAddress,
+    // getCoinPublicKeyFromShieldAddress,
+    transferTo
+};
 
 run(config).catch((e) => {
     console.error(`Error running app: ${e}`);
